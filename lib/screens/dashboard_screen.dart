@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/supabase_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -168,9 +169,8 @@ class _RecordingsTable extends StatelessWidget {
   });
 
   static const _presetKeys = {
-    'Lubrication Status',
-    'Elongation (%)',
-    'Sprocket Type',
+    'Side', 'Component', 'Angle', 'Location on System',
+    'Mic Position', 'Mic Distance (mm)', 'Mic Direction', 'Observations',
   };
 
   int? _sortIndex(String col) {
@@ -211,10 +211,10 @@ class _RecordingsTable extends StatelessWidget {
                   _sortableCol('Rig Name', 'rig_name'),
                   _sortableCol('Operator', 'operator_name'),
                   _sortableCol('Date & Time', 'recorded_at'),
-                  const DataColumn(label: Text('Audio')),
-                  const DataColumn(label: Text('Lubrication Status')),
-                  const DataColumn(label: Text('Elongation (%)')),
-                  const DataColumn(label: Text('Sprocket Type')),
+                  const DataColumn(label: Text('Media')),
+                  const DataColumn(label: Text('Side')),
+                  const DataColumn(label: Text('Component')),
+                  const DataColumn(label: Text('Observations')),
                   const DataColumn(label: Text('Extra Fields')),
                 ],
                 rows: recordings.map((r) => _buildRow(context, r)).toList(),
@@ -237,13 +237,20 @@ class _RecordingsTable extends StatelessWidget {
     final date = DateTime.parse(rec['recorded_at'] as String);
     final metadata =
         Map<String, dynamic>.from(rec['metadata'] as Map? ?? {});
-    final hasAudio = rec['audio_url'] != null;
+    final mediaType = rec['media_type']?.toString() ?? 'audio';
+    final hasMedia = rec['audio_url'] != null;
 
-    final lubrication = metadata['Lubrication Status']?.toString() ?? '—';
-    final elongation = metadata['Elongation (%)']?.toString() ?? '—';
-    final sprocket = metadata['Sprocket Type']?.toString() ?? '—';
+    final side = metadata['Side']?.toString() ?? '—';
+    final component = metadata['Component']?.toString() ?? '—';
+    final observations = metadata['Observations']?.toString() ?? '—';
     final extraCount =
         metadata.keys.where((k) => !_presetKeys.contains(k)).length;
+
+    final mediaIcon = switch (mediaType) {
+      'photo' => Icons.photo_camera,
+      'video' => Icons.videocam,
+      _ => Icons.mic,
+    };
 
     return DataRow(
       onSelectChanged: (_) => _showDetail(context, rec),
@@ -255,13 +262,17 @@ class _RecordingsTable extends StatelessWidget {
         DataCell(Text(rec['operator_name'] as String? ?? '—')),
         DataCell(Text(DateFormat('dd MMM yyyy, HH:mm').format(date))),
         DataCell(Icon(
-          hasAudio ? Icons.mic : Icons.mic_off,
-          color: hasAudio ? Colors.green : Colors.grey.shade400,
+          mediaIcon,
+          color: hasMedia ? Colors.green : Colors.grey.shade400,
           size: 18,
         )),
-        DataCell(Text(lubrication)),
-        DataCell(Text(elongation)),
-        DataCell(Text(sprocket)),
+        DataCell(Text(side)),
+        DataCell(Text(component)),
+        DataCell(Text(
+          observations.length > 40
+              ? '${observations.substring(0, 40)}…'
+              : observations,
+        )),
         DataCell(extraCount > 0
             ? Container(
                 padding:
@@ -367,17 +378,34 @@ class _DetailDialogState extends State<_DetailDialog> {
                       color: Theme.of(context).colorScheme.primary),
                   title: const Text('Audio Recording'),
                   subtitle: Text(_isPlaying ? 'Playing…' : 'Tap to play'),
-                  trailing: IconButton(
-                    onPressed: () async {
-                      if (_isPlaying) {
-                        await _player.stop();
-                      } else {
-                        await _player.play(UrlSource(audioUrl));
-                      }
-                      setState(() => _isPlaying = !_isPlaying);
-                    },
-                    icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow),
-                    color: Theme.of(context).colorScheme.primary,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          if (_isPlaying) {
+                            await _player.stop();
+                          } else {
+                            await _player.play(UrlSource(audioUrl));
+                          }
+                          setState(() => _isPlaying = !_isPlaying);
+                        },
+                        icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow),
+                        color: Theme.of(context).colorScheme.primary,
+                        tooltip: 'Play',
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          final uri = Uri.parse('$audioUrl?download=recording.m4a');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        },
+                        icon: const Icon(Icons.download),
+                        color: Theme.of(context).colorScheme.primary,
+                        tooltip: 'Download',
+                      ),
+                    ],
                   ),
                 ),
               ),
