@@ -48,19 +48,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         title: Row(
           children: [
-            Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            const Text(
-              'Test Facility Recordings',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.black87),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E9FA),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: const Icon(Icons.mic, color: Color(0xFF0E1530), size: 16),
             ),
+            const SizedBox(width: 10),
+            const Text('New Motion Labs'),
           ],
         ),
         bottom: PreferredSize(
@@ -74,7 +76,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 hintText: 'Search by rig, operator, or metadata…',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 filled: true,
-                fillColor: const Color(0xFFF0F0EE),
+                fillColor: const Color(0xFFEAECF0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -191,10 +193,11 @@ class _RecordingsTable extends StatelessWidget {
               child: DataTable(
                 sortColumnIndex: _sortIndex(sortColumn),
                 sortAscending: sortAscending,
-                headingRowColor: WidgetStateProperty.all(Colors.white),
+                headingRowColor:
+                    WidgetStateProperty.all(const Color(0xFF0E1530)),
                 headingTextStyle: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: Color(0xFF00E9FA),
                     fontSize: 13),
                 dataRowColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.hovered)) {
